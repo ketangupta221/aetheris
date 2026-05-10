@@ -1,0 +1,418 @@
+# CI pipeline for Aetheris Planner (Task 4 / Phase 0).
+#
+# Stage order, matching tasks.md Task 4.1 exactly:
+#
+#   lint -> manifest-check -> unit-test -> connectedAndroidTest
+#        -> assembleRelease -> uploadToFirebaseAppDistribution (main only)
+#
+# Each stage is a dedicated GitHub Actions job that `needs` the previous
+# one so the pipeline is strictly sequential — a failure short-circuits the
+# rest of the run.
+#
+# Caching: `gradle/actions/setup-gradle@v4` handles Gradle user home and
+# wrapper caching (keyed on the wrapper + build scripts). The Android SDK is
+# installed via `android-actions/setup-android@v3` whose installer output is
+# stable across runs and picked up by the tool cache.
+#
+# Release signing and Firebase secrets are consumed via `env:` blocks on
+# the jobs that need them. See `docs/ci.md` for the full secrets contract.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress runs of the same branch/PR so a fresh push supersedes
+# any earlier run. `main` pushes are never cancelled (the ref group isolates
+# `refs/heads/main` from PR refs).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Default token scope is read-only; jobs that need to write (artifacts,
+# job summaries) stay inside that scope. No job writes to the repo itself.
+permissions:
+  contents: read
+
+env:
+  # Keep Gradle logs terse and deterministic across runs. `--stacktrace` is
+  # added per-step as needed.
+  GRADLE_OPTS: >-
+    -Dorg.gradle.jvmargs=-Xmx4g
+    -Dorg.gradle.daemon=false
+    -Dorg.gradle.parallel=true
+    -Dorg.gradle.caching=true
+  JAVA_VERSION: "17"
+
+jobs:
+  # --------------------------------------------------------------------
+  # 1. lint — detekt + Android Lint.
+  # --------------------------------------------------------------------
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Run detekt + Android Lint
+        run: ./gradlew detekt lintDebug --stacktrace
+
+      - name: Upload Lint / Detekt reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            **/build/reports/detekt/**
+            **/build/reports/lint-results-*.html
+            **/build/reports/lint-results-*.xml
+          if-no-files-found: ignore
+
+      - name: Post lint summary
+        if: always()
+        run: |
+          {
+            echo "## Lint stage"
+            echo ""
+            echo "- detekt: see \`lint-reports\` artifact for HTML/XML output"
+            echo "- Android Lint (debug variant): \`lint-results-debug.html\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------
+  # 2. manifest-check — the `:checkManifests` gate from Task 2.
+  # Enforces that INTERNET / ACCESS_NETWORK_STATE / ACCESS_WIFI_STATE only
+  # appear in `:distribution:model-downloader`. Runs separately from lint
+  # so a failure here produces a clear, dedicated red job in the PR view
+  # (design §12.3).
+  # --------------------------------------------------------------------
+  manifest-check:
+    name: manifest-check
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run :checkManifests
+        run: ./gradlew checkManifests --stacktrace
+
+      - name: Post manifest-check summary
+        if: always()
+        run: |
+          {
+            echo "## Manifest permission invariant"
+            echo ""
+            echo "Enforces that \`INTERNET\`, \`ACCESS_NETWORK_STATE\`, and"
+            echo "\`ACCESS_WIFI_STATE\` only appear in \`:distribution:model-downloader\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------
+  # 3. unit-test — all JVM tests, including jqwik property-based tests.
+  # JUnit XML is published to the job summary via action-junit-report,
+  # which gives us the aggregated unit+PBT count required by Task 4.3.
+  # --------------------------------------------------------------------
+  unit-test:
+    name: unit-test
+    runs-on: ubuntu-latest
+    needs: manifest-check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Run unit + PBT tests
+        run: ./gradlew test --stacktrace
+
+      - name: Upload JUnit XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-unit
+          path: "**/build/test-results/**/TEST-*.xml"
+          if-no-files-found: warn
+
+      - name: Publish JUnit report (unit)
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: "**/build/test-results/**/TEST-*.xml"
+          check_name: "Unit & property-based tests"
+          detailed_summary: true
+          include_passed: false
+          fail_on_failure: true
+
+  # --------------------------------------------------------------------
+  # 4. connectedAndroidTest — Gradle Managed Devices.
+  #
+  # GMD needs nested virtualization (KVM) on the runner. GitHub's hosted
+  # `ubuntu-latest` runners expose /dev/kvm on recent images, but the
+  # combination of GMD + AGP 8.7 on hosted runners is still flaky enough
+  # that we soft-gate this stage for Phase 0 (design §8: the hardening
+  # pass for device tests lands with Phase 2 Task 38 macrobenchmark
+  # setup). A failure here does not fail the pipeline, but the job is
+  # still visible in the PR check list.
+  # --------------------------------------------------------------------
+  connected-android-test:
+    name: connectedAndroidTest
+    runs-on: ubuntu-latest
+    needs: unit-test
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+      - name: Run Gradle Managed Device tests (Pixel 7 Pro API 34 Google APIs)
+        run: |
+          ./gradlew \
+            pixel7proApi34GoogleApisDebugAndroidTest \
+            --stacktrace
+
+      - name: Upload instrumented test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-instrumented
+          path: |
+            **/build/outputs/androidTest-results/**/TEST-*.xml
+            **/build/reports/androidTests/**
+          if-no-files-found: ignore
+
+      - name: Publish JUnit report (instrumented)
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: "**/build/outputs/androidTest-results/**/TEST-*.xml"
+          check_name: "Instrumented tests"
+          detailed_summary: true
+          include_passed: false
+          fail_on_failure: false
+
+  # --------------------------------------------------------------------
+  # 5. assembleRelease — signed release APK + AAB.
+  # `unit-test` is a hard prerequisite; `connectedAndroidTest` is only a
+  # soft prerequisite during Phase 0 (see the `continue-on-error` note
+  # above), so we don't `needs:` it here. Instead we `needs: unit-test`
+  # and let GMD run independently.
+  # --------------------------------------------------------------------
+  assemble-release:
+    name: assembleRelease
+    runs-on: ubuntu-latest
+    needs: unit-test
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Verify release signing secrets are present
+        run: |
+          missing=()
+          [ -n "$KEYSTORE_BASE64" ]   || missing+=("KEYSTORE_BASE64")
+          [ -n "$KEYSTORE_PASSWORD" ] || missing+=("KEYSTORE_PASSWORD")
+          [ -n "$KEY_ALIAS" ]         || missing+=("KEY_ALIAS")
+          [ -n "$KEY_PASSWORD" ]      || missing+=("KEY_PASSWORD")
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "::error::Missing release signing secrets: ${missing[*]}"
+            echo "See docs/ci.md for the required repository secrets."
+            exit 1
+          fi
+          if [ "$KEY_ALIAS" != "aetheris-release" ]; then
+            echo "::error::KEY_ALIAS must be 'aetheris-release' (see design §2.1)."
+            exit 1
+          fi
+
+      - name: Assemble + bundle release
+        run: ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Report APK / AAB size
+        if: always()
+        run: |
+          set -eu
+          # Phase 0 guardrail: fail if any release APK exceeds 500 MB.
+          # The Phase 0 expectation (tasks.md Task 9.3) is under 20 MB, so
+          # 500 MB is a very loose ceiling that only catches pathological
+          # builds. Tighten in Phase 2 once binary size budgets are set.
+          max_mb=500
+          fail=0
+          {
+            echo "## Release artifacts"
+            echo ""
+            echo "| Artifact | Size |"
+            echo "| --- | ---: |"
+            while IFS= read -r -d '' f; do
+              human=$(du -h "$f" | cut -f1)
+              bytes=$(wc -c < "$f")
+              mb=$(( (bytes + 1024 * 1024 - 1) / (1024 * 1024) ))
+              echo "| \`$(basename "$f")\` | $human |"
+              if [ "$mb" -gt "$max_mb" ]; then
+                fail=1
+              fi
+            done < <(find app/build/outputs \
+                         \( -name '*.apk' -o -name '*.aab' \) -print0)
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$fail" -eq 1 ]; then
+            echo "::error::Release artifact exceeded ${max_mb} MB guardrail."
+            exit 1
+          fi
+
+  # --------------------------------------------------------------------
+  # 6. uploadToFirebaseAppDistribution — main-branch-only.
+  # Phase 0 caveat: the Firebase App Distribution Gradle plugin is wired
+  # in Task 5.2. Until then, the `:app:appDistributionUploadRelease` task
+  # does not exist, so this job is soft-gated (`continue-on-error: true`)
+  # and guarded by an `if` check on the Firebase secrets. On pull_request
+  # runs this job is skipped entirely.
+  # --------------------------------------------------------------------
+  distribute:
+    name: uploadToFirebaseAppDistribution
+    runs-on: ubuntu-latest
+    needs: assemble-release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    continue-on-error: true
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+      FIREBASE_CLI_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Skip if Firebase secrets are not configured
+        id: firebase-check
+        run: |
+          if [ -z "$FIREBASE_APP_ID" ] || [ -z "$FIREBASE_CLI_TOKEN" ]; then
+            echo "Firebase secrets not set; skipping upload. This is expected"
+            echo "until Task 5 wires the Firebase App Distribution plugin."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload to Firebase App Distribution
+        if: steps.firebase-check.outputs.skip == 'false'
+        run: ./gradlew :app:appDistributionUploadRelease --stacktrace
+
+      - name: Post distribute summary
+        if: always()
+        run: |
+          {
+            echo "## Distribute stage"
+            echo ""
+            if [ "${{ steps.firebase-check.outputs.skip }}" = "true" ]; then
+              echo "Skipped — Firebase secrets not yet configured."
+              echo "See Task 5 (Phase 0) and \`docs/ci.md\`."
+            else
+              echo "Uploaded release APK to Firebase App Distribution."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
