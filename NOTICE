@@ -1,0 +1,57 @@
+Aetheris Planner
+Copyright (c) 2026 Ketan Gupta
+Licensed under PolyForm Noncommercial 1.0.0 (see LICENSE).
+
+This product bundles or depends on the following third-party software.
+Each component retains its original license. This NOTICE file is
+provided in addition to (not in place of) those licenses.
+
+---
+
+1. llama.cpp
+   Source:  https://github.com/ggerganov/llama.cpp
+   License: MIT
+   Used by: :ai:llm (Phase 3+, as an alternate on-device LLM runtime)
+
+2. whisper.cpp
+   Source:  https://github.com/ggerganov/whisper.cpp
+   License: MIT
+   Used by: :ai:speech (Phase 5+, as the bundled offline speech engine)
+
+3. MediaPipe LLM Inference
+   Source:  https://github.com/google-ai-edge/mediapipe
+   License: Apache-2.0
+   Used by: :ai:llm (Phase 3, as the primary on-device LLM runtime)
+
+4. SQLCipher for Android
+   Coordinates: net.zetetic:android-database-sqlcipher
+   Source:  https://github.com/sqlcipher/sqlcipher
+   License: BSD-3-Clause
+   Used by: :core:data (encrypted SQLite store)
+
+5. AndroidX Room
+   Source:  https://developer.android.com/jetpack/androidx/releases/room
+   License: Apache-2.0
+   Used by: :core:data (SQL ORM)
+
+6. Jetpack Compose (androidx.compose.*)
+   Source:  https://developer.android.com/jetpack/compose
+   License: Apache-2.0
+   Used by: :app and every :feature:* module (UI toolkit)
+
+7. Kotlin Standard Library & Compiler
+   Source:  https://github.com/JetBrains/kotlin
+   License: Apache-2.0
+   Used by: every Kotlin module in this project
+
+---
+
+Additional transitive dependencies used by this project — including
+AndroidX core, lifecycle, activity, navigation, hilt, datastore,
+kotlinx-coroutines, kotlinx-serialization, kotlinx-datetime, Detekt,
+JUnit 5, jqwik, kotest-property, MockK, Robolectric, and Truth — are
+each licensed under Apache-2.0, MIT, BSD, or EPL-2.0. Their canonical
+notices live in each dependency's POM and source repository.
+
+If you believe a component is missing from this list, please open
+an issue at https://github.com/ketangupta221/aetheris/issues.
