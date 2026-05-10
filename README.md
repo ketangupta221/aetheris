@@ -92,6 +92,25 @@ Full design lives in [`docs/spec/design.md`](docs/spec/design.md).
 No USB tethering required at any point. See [`docs/install.md`](docs/install.md)
 for the tap-to-install flow via Firebase App Distribution.
 
+## Distribution / CI
+
+Signed release APKs are uploaded to **Firebase App Distribution** on
+every push to `main` by [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Testers in the `internal-testers` group receive a tap-install link on
+their phones; see [`docs/install.md`](docs/install.md) for the
+per-device install flow.
+
+First-time configuration of the Firebase project, the
+`FIREBASE_APP_ID` / `FIREBASE_CLI_TOKEN` GitHub Actions secrets, and
+the `internal-testers` group is documented in
+[`docs/firebase-setup.md`](docs/firebase-setup.md). Release-signing
+secrets (`KEYSTORE_BASE64` and friends) are covered in
+[`docs/ci.md`](docs/ci.md).
+
+From Phase 3 onward the primary distribution channel switches to the
+Google Play Internal Testing track; Firebase App Distribution remains
+available as a secondary fat-APK channel.
+
 ## License
 
 PolyForm Noncommercial 1.0.0. See [`LICENSE`](LICENSE).

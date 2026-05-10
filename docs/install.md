@@ -13,6 +13,12 @@ through the Firebase install flow.
 
 No USB cable is required at any step.
 
+> 📎 **First-time CI configuration?** The Firebase project itself, the
+> `FIREBASE_APP_ID` / `FIREBASE_CLI_TOKEN` GitHub Actions secrets, and
+> the `internal-testers` group are set up once via the runbook at
+> [`firebase-setup.md`](firebase-setup.md). This page covers the
+> per-device install flow only.
+
 [fad]: https://firebase.google.com/products/app-distribution
 
 ## Prerequisites (one-time)
