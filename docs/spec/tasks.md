@@ -77,14 +77,14 @@ This plan converts the approved design (`design.md`) into discrete, phase-aligne
     - Full property coverage added in Phase 1 (task 25) when real operations exist
     - _Requirements: 5.1, 5.3_
 
-- [ ] 4. Set up CI pipeline (GitHub Actions)
-  - [-] 4.1 Create `.github/workflows/ci.yml`
+- [x] 4. Set up CI pipeline (GitHub Actions)
+  - [x] 4.1 Create `.github/workflows/ci.yml`
     - Stages in order: `lint` → `manifest-check` → `unit-test` → `connectedAndroidTest` (Gradle Managed Devices) → `assembleRelease` → (on `main` branch only) `uploadToFirebaseAppDistribution`
     - Cache Gradle + Android SDK between runs
-  - [-] 4.2 Configure CI secrets
+  - [x] 4.2 Configure CI secrets
     - `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` (= `aetheris-release`), `KEY_PASSWORD`, `FIREBASE_APP_ID`, `FIREBASE_CLI_TOKEN`
     - Document required repository secrets in `docs/ci.md`
-  - [-] 4.3 Add build summary reporting
+  - [x] 4.3 Add build summary reporting
     - Test counts (unit + PBT + instrumented)
     - APK size (release) — surfaces unexpected growth early per design §12.1
     - Posted as a GitHub Actions job summary
@@ -126,20 +126,20 @@ This plan converts the approved design (`design.md`) into discrete, phase-aligne
     - _Requirements: 22.2_
 
 - [ ] 8. Initialize GitHub repository and open-source governance
-  - [-] 8.1 Create public GitHub repo named `aetheris` under the user's account
+  - [x] 8.1 Create public GitHub repo named `aetheris` under the user's account
     - Visibility: public; default branch `main`
     - _Requirements: 29.3_
-  - [-] 8.2 Check in `LICENSE` with the full PolyForm Noncommercial 1.0.0 text at repo root
+  - [x] 8.2 Check in `LICENSE` with the full PolyForm Noncommercial 1.0.0 text at repo root
     - _Requirements: 29.3_
-  - [-] 8.3 Check in `NOTICE` listing third-party dependency licenses
+  - [x] 8.3 Check in `NOTICE` listing third-party dependency licenses
     - Entries: llama.cpp MIT, whisper.cpp MIT, MediaPipe Apache-2.0, SQLCipher BSD-3, Room Apache-2.0, Compose Apache-2.0, Kotlin Apache-2.0
     - _Requirements: 29.4_
-  - [-] 8.4 Write the initial `README.md`
+  - [x] 8.4 Write the initial `README.md`
     - Product description, brand etymology ("Aether" + "Intelligent System"), tagline "Offline AI Planner for your Daily Life", license summary pointing to `LICENSE`, local-run instructions, and a "Privacy" section stating all processing is on-device
     - _Requirements: 29.5_
-  - [-] 8.5 Add `SECURITY.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md` at repo root
+  - [x] 8.5 Add `SECURITY.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md` at repo root
     - _Requirements: 29.6_
-  - [-] 8.6 Host the privacy policy via GitHub Pages
+  - [x] 8.6 Host the privacy policy via GitHub Pages
     - `docs/privacy-policy.md` declares: no data collected, no data transmitted, no analytics / telemetry / crash reporting / advertising SDKs
     - Enable GitHub Pages serving from the `docs/` folder on `main`
     - Captured URL (e.g. `https://<user>.github.io/aetheris/privacy-policy`) is recorded so it can be linked from Settings → About in a future Phase 1 or Phase 3 task when the About screen lands
@@ -149,7 +149,7 @@ This plan converts the approved design (`design.md`) into discrete, phase-aligne
     - Disallow force pushes
     - Require at least one review for pull requests
     - _Requirements: 29.8_
-  - [-] 8.8 Configure repository topics and description for discoverability
+  - [ ] 8.8 Configure repository topics and description for discoverability
     - Topics: `android`, `offline-first`, `on-device-llm`, `productivity`, `kotlin`, `jetpack-compose`
     - Repository description: "Aetheris Planner — Offline AI Planner for your Daily Life"
     - _Requirements: 29.1, 29.5_

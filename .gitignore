@@ -16,6 +16,11 @@ output.json
 # use different editors and their settings shouldn't bleed into the repo.
 .vscode/
 
+# Kiro tool local state — the project spec itself lives under docs/spec/
+# (committed); everything under .kiro/ is tool-specific and stays out of
+# the repo.
+.kiro/
+
 # Kotlin
 .kotlin/
 

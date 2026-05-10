@@ -14,7 +14,7 @@ the project's promise: on-device AI that never leaves the device.
 
 ## Status
 
-Phase 0 (scaffolding). See [`.kiro/specs/ai-daily-planner/tasks.md`](.kiro/specs/ai-daily-planner/tasks.md)
+Phase 0 (scaffolding). See [`docs/spec/tasks.md`](docs/spec/tasks.md)
 for the full roadmap.
 
 ## Features (planned)
@@ -79,7 +79,7 @@ the full list. High-level layout:
 - `:distribution:model-downloader` — the only module allowed to open
   outbound sockets, gated by user consent
 
-Full design lives in [`.kiro/specs/ai-daily-planner/design.md`](.kiro/specs/ai-daily-planner/design.md).
+Full design lives in [`docs/spec/design.md`](docs/spec/design.md).
 
 ## Testing
 
