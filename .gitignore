@@ -12,6 +12,10 @@ captures/
 .navigation/
 output.json
 
+# VS Code / Kiro — personal IDE config stays local; different contributors
+# use different editors and their settings shouldn't bleed into the repo.
+.vscode/
+
 # Kotlin
 .kotlin/
 
