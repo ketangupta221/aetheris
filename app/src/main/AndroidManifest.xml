@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  :app manifest. Per design §2.4 (Manifest and permission strategy), the app
+  module declares NO android.permission.INTERNET. That permission lives solely
+  in :distribution:model-downloader and is policed by the buildSrc
+  `checkManifests` task (Task 2.1) and the custom Lint detector (Task 2.3).
+  Runtime permissions (POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM,
+  RECEIVE_BOOT_COMPLETED, RECORD_AUDIO, FOREGROUND_SERVICE,
+  FOREGROUND_SERVICE_SPECIAL_USE) land in Tasks 17.x / 21.x as the relevant
+  features come online.
+
+  android:name points at PlannerApplication (Tasks 3.1 + 6.3). Its onCreate()
+  installs the NetworkDenyingSocketFactory before any other component
+  initializes, and @HiltAndroidApp roots the Hilt DI graph.
+
+  MainActivity is declared as the launcher activity (Task 6.1). Its theme
+  is set to Theme.Aetheris.Splash — a thin Material 3 DayNight parent that
+  hides the action bar, lets the window draw edge-to-edge, and hands off to
+  the Compose-rendered AetherisTheme as soon as setContent runs.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name=".PlannerApplication"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Aetheris.Splash"
+        android:allowBackup="false">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Aetheris.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

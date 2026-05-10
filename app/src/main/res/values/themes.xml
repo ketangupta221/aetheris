@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XML theme applied to the Application and Activity before Compose takes over
+  (Task 6.1 + 7.1). Compose renders its own Material 3 surfaces inside
+  `setContent { AetherisTheme { ... } }`; this XML theme only needs to:
+
+    - hide the action bar (we use Compose's TopAppBar instead)
+    - draw edge-to-edge so Compose controls status/nav-bar visuals
+
+  We parent to the framework's `android:Theme.Material.Light.NoActionBar`
+  instead of the Material Components library's
+  `Theme.Material3.DayNight.NoActionBar` to avoid pulling in the
+  `com.google.android.material:material` dependency. The Material
+  Components library only matters for XML-based views; our UI is pure
+  Compose + Material 3 (via `androidx.compose.material3`) and does not need
+  the companion View library.
+
+  Day/Night is still respected at the AAPT level: we define a dark variant
+  via `values-night/themes.xml` (see sibling file) that overrides the same
+  style name with a framework dark parent. The launch-window window
+  background therefore flips between light and dark in sync with the system
+  setting even before Compose has rendered a frame.
+-->
+<resources>
+    <style name="Theme.Aetheris.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>

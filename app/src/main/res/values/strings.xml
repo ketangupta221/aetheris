@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher label per design §2.1 "Android identity". -->
+    <string name="app_name">Aetheris Planner</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dark-mode override for Theme.Aetheris.Splash (Task 7.1). See
+  `values/themes.xml` for the rationale for using framework parents instead
+  of the Material Components library. This variant is picked up by AAPT when
+  the system is in dark mode, so the launch-window background matches the
+  user's system setting until Compose takes over with its own theme.
+-->
+<resources>
+    <style name="Theme.Aetheris.Splash" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>
