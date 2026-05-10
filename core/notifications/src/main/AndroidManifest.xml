@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- :core:notifications declares no permissions. POST_NOTIFICATIONS is
+     requested just-in-time from :app (Task 17.3 / 24.2). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

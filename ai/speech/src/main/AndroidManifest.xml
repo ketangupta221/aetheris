@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- :ai:speech declares no permissions. RECORD_AUDIO sits on :app and is
+     requested just-in-time in Task 76.1. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

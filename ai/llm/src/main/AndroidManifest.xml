@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  :ai:llm declares NO permissions — critically no INTERNET. Model weight files
+  are read from local storage (bundled via PAD or fetched by
+  :distribution:model-downloader) per Req 7.2 / design §2.4. The runtime
+  SocketFactory override in Task 3.1 enforces the no-network invariant
+  independent of the manifest.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

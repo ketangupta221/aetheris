@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- :core:scheduling declares no permissions. Runtime permissions for exact
+     alarms and boot-completed receivers are declared in :app manifest in a
+     later Phase 0 task. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

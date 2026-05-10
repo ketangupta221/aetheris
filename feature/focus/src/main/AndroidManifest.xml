@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- :feature:focus declares no permissions. FOREGROUND_SERVICE* permissions
+     are declared in :app when the foreground service lands in Phase 6 Task 82. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

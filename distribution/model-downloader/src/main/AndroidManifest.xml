@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  :distribution:model-downloader is the ONLY module allowed to declare
+  android.permission.INTERNET. Phase 0 keeps the manifest permission-free; the
+  permission is added in Task 41.2 when the module becomes a dynamic feature.
+  The buildSrc `checkManifests` task (Task 2.1) allowlists this path.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

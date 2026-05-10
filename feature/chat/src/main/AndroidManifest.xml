@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- :feature:chat declares no permissions. RECORD_AUDIO is requested
+     just-in-time from :app when voice input lands in Phase 5. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
