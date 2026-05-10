@@ -118,6 +118,86 @@ target to land in.
    account email. That's the email that will receive the tap-install
    invite on your Samsung Galaxy S23.
 
+#### Source-of-truth contract for the group name
+
+The literal `internal-testers` is declared in **exactly one place** in
+this repository: the `groups = "internal-testers"` assignment inside
+the `firebaseAppDistribution { ... }` block of
+[`app/build.gradle.kts`](../app/build.gradle.kts). Every other
+reference (this runbook, [`install.md`](install.md), the README, and
+any CI log message) is explanatory prose that describes what is
+configured in Gradle — none of them configure it. In particular:
+
+- The CI workflow at [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+  invokes `./gradlew :app:appDistributionUploadRelease` with no
+  `--groups` override, so Gradle is authoritative. If you ever see a
+  `--groups` flag added to that invocation, delete it — it would
+  silently override the Gradle-side contract.
+- The Firebase Console group name you create in the steps above must
+  match the Gradle literal exactly, character for character,
+  including case and the hyphen. A mismatch surfaces as an
+  `appDistributionUploadRelease` failure with a "group not found"
+  message; fix it by renaming the Console group, not the Gradle
+  literal.
+
+#### Phase 0 single-tester invariant
+
+- **The `internal-testers` group MUST contain exactly one email
+  through Phase 0**: your own primary Google account. This is a
+  privacy guardrail — while the project is pre-release, no build
+  should land on any phone other than yours, even accidentally. Do
+  not add collaborators, family members, or secondary Google
+  accounts to this group until Phase 2 polish (see §1.5 below), at
+  which point the broader `qa-testers` group becomes the place for
+  additional testers.
+
+### 1.5 Future group: `qa-testers` (Phase 2+)
+
+Per design §8 (phased roadmap), Firebase App Distribution remains the
+delivery channel through Phases 0–2. Phase 3 switches primary
+distribution to the Play Internal Testing track and Firebase App
+Distribution becomes a secondary channel. Before that switch — late
+in Phase 2 polish, when the release-candidate pool widens beyond the
+sole developer — we will introduce a second Firebase group named
+`qa-testers` for broader pre-Play tester coverage.
+
+**Do NOT create this group yet.** The section exists to pre-document
+the contract so the future change has a clear landing pad.
+
+When Phase 2 is ready for a wider RC pool:
+
+1. In the Firebase Console, create a second group with the literal
+   string `qa-testers` (lowercase, hyphen; same casing convention as
+   `internal-testers`).
+2. Populate `qa-testers` with the broader tester pool. Keep
+   `internal-testers` as the tight, fast-iteration group — the
+   developer's own accounts plus any immediate collaborators.
+3. In `app/build.gradle.kts`, change the single literal from
+
+   ```kotlin
+   groups = "internal-testers"
+   ```
+
+   to the comma-separated form
+
+   ```kotlin
+   groups = "internal-testers,qa-testers"
+   ```
+
+   Firebase's `groups` field accepts a comma-separated list with no
+   whitespace around the commas. This is the only code change
+   required — CI does not need to know about the new group because
+   Gradle stays authoritative (no `--groups` override in
+   [`ci.yml`](../.github/workflows/ci.yml)).
+4. Update the single-tester invariant in §1.4: once `qa-testers`
+   exists, `internal-testers` may loosen to the immediate
+   collaborator set, but `qa-testers` takes on the "no unauthorized
+   recipients" privacy bar.
+
+No Gradle, manifest, or secrets changes are needed to add
+`qa-testers` in the future — it is purely a Console action plus a
+one-line edit of the `groups` literal.
+
 ---
 
 ## 2. Local machine — generate a CI token
@@ -256,6 +336,12 @@ Run through these before declaring Task 5.1 done end-to-end.
 - [ ] **Distribution group `internal-testers` exists** under
       Firebase App Distribution → Testers & Groups, with your own
       Google account email as a tester.
+- [ ] **`internal-testers` group contains exactly one email**
+      (your primary Google account) — the Phase 0 single-tester
+      invariant from §1.4.
+- [ ] **`qa-testers` group has NOT been created yet.** It is a
+      Phase 2+ addition (§1.5); creating it now would drift ahead of
+      the Gradle `groups` literal.
 - [ ] **`firebase-tools` installed locally** and
       `firebase login:ci` produced a token that was pasted into the
       GitHub secret `FIREBASE_CLI_TOKEN`. Optional dry-run:
