@@ -111,6 +111,30 @@ From Phase 3 onward the primary distribution channel switches to the
 Google Play Internal Testing track; Firebase App Distribution remains
 available as a secondary fat-APK channel.
 
+## Contributing & branch protection
+
+`main` is a protected branch. Every change must land via a pull
+request that passes CI. The following four status checks are required
+before merge:
+
+- `lint`
+- `manifest-check`
+- `unit-test`
+- `assembleRelease`
+
+Force pushes and deletions of `main` are disallowed, all PR
+conversations must be resolved before merge, and at least one
+approving review is required.
+
+During Phase 0, the repository owner retains admin bypass so that
+scaffolding work can land directly on `main` while CI is being shaken
+out. From Phase 1 onward, non-admin contributors must use the PR flow
+for every change.
+
+The full policy, including the authoritative JSON payload and an
+idempotent `apply-branch-protection.sh` script, lives in
+[`docs/branch-protection.md`](docs/branch-protection.md).
+
 ## License
 
 PolyForm Noncommercial 1.0.0. See [`LICENSE`](LICENSE).
