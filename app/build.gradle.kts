@@ -13,6 +13,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    // Task 5.2 — Firebase App Distribution. Applied only on `:app`. The
+    // `firebaseAppDistribution { ... }` extension is configured below on the
+    // `release` build type, and only when `FIREBASE_APP_ID` is present in the
+    // environment, so a developer running `./gradlew :app:assembleDebug`
+    // without Firebase provisioned never sees configuration errors.
+    alias(libs.plugins.firebase.appdistribution)
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +81,24 @@ if (releaseSigningEnvComplete) {
     releaseKeystoreFile.writeBytes(Base64.getDecoder().decode(keystoreBase64))
 }
 
+// ---------------------------------------------------------------------------
+// Firebase App Distribution (Task 5.2, design §12.1).
+//
+// The plugin itself is always applied (see `plugins {}` above) so the Gradle
+// tasks it contributes — `appDistributionUploadRelease` in particular — are
+// visible in `./gradlew :app:tasks`. Its configuration block, however, runs
+// only when the CI environment exposes `FIREBASE_APP_ID`; a developer running
+// `./gradlew :app:assembleDebug` with no Firebase provisioning should never
+// trip over "App ID not set" errors.
+//
+// Credentials come from `FIREBASE_CLI_TOKEN` (an env var the plugin reads
+// automatically); the CI workflow surfaces it as a secret. Release notes are
+// pulled from `CHANGELOG.md` at repo root so a commit that updates the
+// changelog is the single source of truth for what testers see in the
+// Firebase App Tester notification.
+// ---------------------------------------------------------------------------
+val firebaseConfigured: Boolean = !System.getenv("FIREBASE_APP_ID").isNullOrBlank()
+
 android {
     namespace = "dev.aetheris.planner.app"
     compileSdk = 34
@@ -115,6 +139,28 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
             isMinifyEnabled = false
+
+            // Task 5.2 — Firebase App Distribution, release-only. The plugin
+            // surface is always on the task graph; the configuration is only
+            // populated when CI is set up with the Firebase project. Local
+            // debug builds never reach this block because it lives under
+            // `release { ... }`.
+            if (firebaseConfigured) {
+                firebaseAppDistribution {
+                    // `artifactType` defaults to "APK"; Firebase App
+                    // Distribution itself only accepts APKs (AAB upload is a
+                    // Play-store-only path), so we leave the default in
+                    // place. CI also calls `assembleRelease` (APK), not
+                    // `bundleRelease` (AAB), for this reason.
+                    groups = "internal-testers"
+                    releaseNotesFile = "${rootDir}/CHANGELOG.md"
+                    // Empty = fall back to FIREBASE_CLI_TOKEN env var, which
+                    // the CI workflow (.github/workflows/ci.yml) surfaces as
+                    // a repository secret. A service-account JSON path would
+                    // go here in a service-account-credentialed setup.
+                    serviceCredentialsFile = ""
+                }
+            }
         }
     }
 

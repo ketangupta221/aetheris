@@ -27,6 +27,14 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.hilt) apply false
 
+    // Firebase App Distribution plugin (Task 5.2). Declared at the root with
+    // `apply false` so the plugin lands on the buildscript classpath, then
+    // applied by `:app` only. Its configuration block in `app/build.gradle.kts`
+    // runs only when `FIREBASE_APP_ID` is present in the environment, so local
+    // developer debug builds are unaffected. The uploader itself authenticates
+    // via `FIREBASE_CLI_TOKEN` in CI.
+    alias(libs.plugins.firebase.appdistribution) apply false
+
     // Detekt — static analysis (Task 1.5). Declared here with `apply false`
     // so the plugin ends up on the buildscript classpath, then applied to
     // every subproject below. Version pinned inline per the Phase 0 scope:

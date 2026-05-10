@@ -68,6 +68,13 @@ detekt = "1.23.7"
 # implement the post-merge INTERNET detector per design §10.5 and §12.3.
 lintApi = "31.7.3"
 
+# Firebase App Distribution Gradle plugin (Task 5.2). Applied only on `:app`,
+# only on the release build type. Reads release notes from CHANGELOG.md and
+# authenticates through the FIREBASE_CLI_TOKEN env var in CI. The configuration
+# block is gated behind the FIREBASE_APP_ID env var in `app/build.gradle.kts`
+# so local debug builds (where Firebase isn't provisioned) aren't affected.
+firebaseAppDistribution = "5.0.0"
+
 [libraries]
 # --- AndroidX core ---------------------------------------------------------
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -159,6 +166,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+firebase-appdistribution = { id = "com.google.firebase.appdistribution", version.ref = "firebaseAppDistribution" }
 
 [bundles]
 # Compose UI surfaces — import `platform(libs.compose.bom)` alongside this
