@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+local.properties
+captures/
+.navigation/
+output.json
+
+# Kotlin
+.kotlin/
+
+# macOS
+.DS_Store
+
+# Keystores (debug keystore is generated locally per Task 1.3;
+# release keystore is materialized into build/ from KEYSTORE_BASE64 at
+# build time and never committed)
+*.jks
+*.keystore
+
+# Secrets (sourced from env in CI per design §9.4)
+keystore.properties
+
+# Android Lint baselines — generated on first `./gradlew lint` run and
+# treated as a module-local cache (Task 1.5).
+lint-baseline.xml
+
+# jqwik property-test cache (per-module; regenerated on each run)
+.jqwik-database

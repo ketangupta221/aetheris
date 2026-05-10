@@ -1,0 +1,99 @@
+# Detekt configuration — introduced by Task 1.5 (Phase 0).
+#
+# Scope for Phase 0: enable Detekt's standard rule sets on top of the built-in
+# defaults so `./gradlew detekt` acts as a gate in CI (design §9.1). Custom
+# rules that enforce "no java.net.*, okhttp3.*, javax.net.ssl.* outside
+# :distribution:model-downloader" are WIRED AS A PLACEHOLDER HERE and
+# implemented in Task 2.3 / 2.4 (custom Android Lint detector) plus a
+# forbidden-import Detekt rule set to be added alongside. Keeping the stub
+# here so a contributor editing this file can see the future home of those
+# rules without digging through the design doc.
+#
+# Rule of thumb for edits: change defaults via `buildUponDefaultConfig = true`
+# (set in the root build) rather than overriding every rule section. Only
+# override rules here when the default is wrong for this codebase.
+
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+  checkExhaustiveness: false
+
+processors:
+  active: true
+
+console-reports:
+  active: true
+
+output-reports:
+  active: true
+
+complexity:
+  active: true
+  LongParameterList:
+    active: true
+    functionThreshold: 8
+    constructorThreshold: 8
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 30
+    thresholdInClasses: 20
+
+style:
+  active: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '100'
+      - '1000'
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: false
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignoreRanges: true
+  NewLineAtEndOfFile:
+    active: true
+  WildcardImport:
+    active: true
+    excludeImports:
+      - 'java.util.*'
+
+formatting:
+  # `formatting` wraps the ktlint rule set via the detekt-formatting dependency
+  # applied in the root build script.
+  active: true
+  android: true
+  autoCorrect: false
+  MaximumLineLength:
+    active: true
+    maxLineLength: 120
+    ignoreBackTickedIdentifier: false
+
+# ----------------------------------------------------------------------------
+# TODO (Task 2.3 + 10.5): Forbidden-import rule set.
+#
+# Rules to add once the custom detector + Detekt rule set land:
+#   - ForbiddenImport for `java.net.*`, `javax.net.ssl.*`, `okhttp3.*`,
+#     `retrofit2.*` anywhere under `src/main/` except in
+#     `:distribution:model-downloader`.
+#   - Pair with the Android Lint detector in Task 2.3 so violations are caught
+#     in both the Detekt and Lint pipelines (defense in depth — see design
+#     §10.5 and §5.3).
+#
+# We keep this comment in place (rather than an empty `forbidden-import:`
+# block) so Detekt's `config.validation = true` does not reject an unknown
+# rule-set key while the feature is still stubbed out.
+# ----------------------------------------------------------------------------
