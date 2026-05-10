@@ -1,0 +1,21 @@
+{
+  "description": "Offline, privacy-first Android productivity app with on-device LLM, tasks, habits, and focus — no cloud, no analytics.",
+  "homepage": "https://ketangupta221.github.io/aetheris/privacy-policy",
+  "topics": [
+    "android",
+    "gemma",
+    "hilt",
+    "jetpack-compose",
+    "kotlin",
+    "llama-cpp",
+    "mediapipe",
+    "offline-first",
+    "on-device-ai",
+    "on-device-llm",
+    "privacy",
+    "productivity",
+    "room",
+    "sqlcipher",
+    "whisper-cpp"
+  ]
+}
